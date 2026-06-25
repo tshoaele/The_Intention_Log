@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d0d0d">
+<title>The Intention Log — Vuja Tsoaele</title>
+<meta name="description" content="A private, offline journal for tracking what you call in, how it landed, and how you felt through the process.">
+<link rel="manifest" href="#" id="manifest-link">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#0d0d0d;--surface:#141414;--surface2:#1c1c1c;--surface3:#242424;
+--border:#2a2a2a;--border2:#333;
+--text:#f0ece4;--text2:#a09890;--text3:#6a6058;
+--gold:#c9a96e;--gold2:#e8c98a;--gold3:#8a6d3f;
+--accent:#4a7c6f;--accent2:#6aab9a;
+--danger:#8a3a3a;--success:#3a6a4a;
+--radius:12px;--radius-sm:6px;--radius-lg:20px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+h1,h2,h3,.serif{font-family:'Cormorant Garamond',serif}
+button{cursor:pointer;font-family:'DM Sans',sans-serif;border:none;background:none;color:inherit}
+input,textarea,select{font-family:'DM Sans',sans-serif;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:10px 14px;font-size:14px;width:100%;outline:none;transition:border-color .2s}
+input:focus,textarea:focus,select:focus{border-color:var(--gold3)}
+textarea{resize:vertical;min-height:90px}
+select option{background:var(--surface2)}
+
+/* PIN SCREEN */
+#pin-screen{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px}
+.pin-logo{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:300;color:var(--gold);letter-spacing:2px;text-align:center}
+.pin-logo span{display:block;font-size:13px;font-weight:300;color:var(--text2);letter-spacing:4px;text-transform:uppercase;margin-top:4px}
+.pin-dots{display:flex;gap:16px}
+.pin-dot{width:12px;height:12px;border-radius:50%;border:1px solid var(--gold3);background:transparent;transition:background .15s}
+.pin-dot.filled{background:var(--gold)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,72px);gap:12px}
+.pin-key{width:72px;height:72px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);font-size:20px;font-weight:300;color:var(--text);transition:background .15s,transform .1s;display:flex;align-items:center;justify-content:center}
+.pin-key:active{background:var(--surface3);transform:scale(.95)}
+.pin-key.del{font-size:14px;color:var(--text2)}
+.pin-error{color:var(--danger);font-size:13px;height:20px;text-align:center}
+.pin-hint{font-size:12px;color:var(--text3);text-align:center}
+
+/* MAIN APP */
+#app{display:none;flex-direction:column;min-height:100vh}
+#app.visible{display:flex}
+
+/* HEADER */
+.header{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between}
+.logo-mark{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;color:var(--gold);letter-spacing:1px}
+.header-actions{display:flex;gap:8px}
+.icon-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:18px;transition:background .2s,color .2s}
+.icon-btn:hover{background:var(--surface2);color:var(--text)}
+
+/* TABS */
+.tabs{display:flex;gap:0;padding:20px 24px 0;border-bottom:1px solid var(--border)}
+.tab{padding:10px 20px;font-size:13px;font-weight:400;color:var(--text3);letter-spacing:.5px;border-bottom:2px solid transparent;transition:color .2s,border-color .2s;margin-bottom:-1px}
+.tab.active{color:var(--gold);border-color:var(--gold)}
+
+/* VIEWS */
+.view{display:none;padding:24px;flex:1}
+.view.active{display:block}
+
+/* DASHBOARD */
+.dashboard-header{margin-bottom:28px}
+.dashboard-header h2{font-size:32px;font-weight:300;color:var(--text);letter-spacing:-.5px}
+.dashboard-header p{color:var(--text2);font-size:13px;margin-top:4px}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.stat-val{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:var(--gold);line-height:1}
+.stat-label{font-size:11px;color:var(--text3);margin-top:6px;letter-spacing:.5px;text-transform:uppercase}
+.section-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:400;color:var(--text2);margin-bottom:16px;letter-spacing:.5px}
+.recent-list{display:flex;flex-direction:column;gap:10px}
+.entry-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;cursor:pointer;transition:border-color .2s,background .2s}
+.entry-card:hover{border-color:var(--border2);background:var(--surface2)}
+.entry-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.entry-intention{font-size:15px;font-weight:400;color:var(--text);flex:1}
+.entry-meta{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:400;letter-spacing:.3px}
+.badge-status-set{background:#1a2a3a;color:#6ab0d4}
+.badge-status-arrived{background:#1a2e20;color:#6ac48a}
+.badge-status-partial{background:#2e2a1a;color:#c4a86a}
+.badge-status-released{background:#2a1a1a;color:#c46a6a}
+.badge-feeling{background:var(--surface2);color:var(--text2)}
+.entry-date{font-size:11px;color:var(--text3)}
+.empty-state{text-align:center;padding:60px 24px;color:var(--text3)}
+.empty-state .serif{font-size:28px;color:var(--text2);margin-bottom:12px;display:block;font-weight:300}
+.empty-state p{font-size:13px;line-height:1.7}
+
+/* MOOD BAR */
+.mood-bar{margin-bottom:28px}
+.mood-track{display:flex;gap:4px;margin-top:10px}
+.mood-seg{flex:1;height:6px;border-radius:3px;background:var(--surface2)}
+
+/* FORM */
+.form-group{margin-bottom:18px}
+.form-label{font-size:12px;color:var(--text2);margin-bottom:6px;display:block;letter-spacing:.5px;text-transform:uppercase}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.feeling-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+.feeling-btn{padding:8px 4px;font-size:12px;border:1px solid var(--border);border-radius:var(--radius-sm);text-align:center;transition:all .2s;color:var(--text2)}
+.feeling-btn.selected{border-color:var(--gold);color:var(--gold);background:#1e1a12}
+.faith-slider{width:100%;-webkit-appearance:none;appearance:none;height:4px;background:var(--surface2);border-radius:2px;outline:none;border:none;padding:0}
+.faith-slider::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--gold);cursor:pointer}
+.faith-slider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--gold);cursor:pointer;border:none}
+.faith-val{font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--gold);text-align:right}
+.btn-primary{background:var(--gold);color:#0d0d0d;border-radius:var(--radius-sm);padding:12px 24px;font-size:14px;font-weight:500;width:100%;transition:background .2s}
+.btn-primary:hover{background:var(--gold2)}
+.btn-ghost{border:1px solid var(--border2);border-radius:var(--radius-sm);padding:10px 20px;font-size:13px;color:var(--text2);transition:all .2s}
+.btn-ghost:hover{border-color:var(--gold3);color:var(--gold)}
+
+/* JOURNAL / LIST */
+.filter-row{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.filter-chip{padding:6px 14px;border:1px solid var(--border);border-radius:20px;font-size:12px;color:var(--text2);transition:all .2s}
+.filter-chip.active{border-color:var(--gold);color:var(--gold);background:#1e1a12}
+
+/* DETAIL MODAL */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:50;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-backdrop.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-width:600px;max-height:85vh;overflow-y:auto;padding:28px 24px 40px;transform:translateY(30px);transition:transform .25s}
+.modal-backdrop.open .modal{transform:translateY(0)}
+.modal-handle{width:40px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 24px}
+.modal-intention{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;line-height:1.3;margin-bottom:20px}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.modal-field{background:var(--surface2);border-radius:var(--radius-sm);padding:12px 14px}
+.modal-field-label{font-size:11px;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
+.modal-field-val{font-size:15px;color:var(--text)}
+.modal-note{background:var(--surface2);border-radius:var(--radius-sm);padding:14px;margin-bottom:20px;font-size:14px;color:var(--text2);line-height:1.7;font-style:italic}
+.hooponopono{border-top:1px solid var(--border);padding-top:20px;font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:300;color:var(--text3);font-style:italic;text-align:center;line-height:1.8}
+.modal-actions{display:flex;gap:10px;margin-top:20px}
+.btn-danger{border:1px solid var(--danger);border-radius:var(--radius-sm);padding:10px 20px;font-size:13px;color:#c46a6a;transition:all .2s}
+.btn-danger:hover{background:#2a1a1a}
+
+/* SETTINGS */
+.settings-section{margin-bottom:32px}
+.settings-section h3{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;color:var(--text2);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
+.settings-row:last-child{border-bottom:none}
+.settings-label{font-size:14px;color:var(--text)}
+.settings-sublabel{font-size:12px;color:var(--text3);margin-top:2px}
+
+/* ACHIEVEMENTS */
+.achievements-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ach-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;text-align:center;transition:border-color .2s}
+.ach-card.unlocked{border-color:var(--gold3)}
+.ach-icon{font-size:24px;margin-bottom:8px;filter:grayscale(1);opacity:.3}
+.ach-card.unlocked .ach-icon{filter:none;opacity:1}
+.ach-name{font-size:11px;color:var(--text3);letter-spacing:.3px}
+.ach-card.unlocked .ach-name{color:var(--gold)}
+
+/* ABOUT */
+.about-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px}
+.about-card .serif{font-size:36px;font-weight:300;color:var(--gold);display:block;margin-bottom:16px}
+.about-body{font-size:14px;color:var(--text2);line-height:1.9}
+.about-body p{margin-bottom:14px}
+.vuja-sig{font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--gold3);margin-top:24px}
+
+/* TRANSITIONS */
+.fade-in{animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+@media(max-width:420px){
+.stats-grid{grid-template-columns:repeat(3,1fr)}
+.form-grid{grid-template-columns:1fr}
+.feeling-grid{grid-template-columns:repeat(3,1fr)}
+.achievements-grid{grid-template-columns:repeat(2,1fr)}
+.modal-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- PIN SCREEN -->
+<div id="pin-screen">
+  <div class="pin-logo">The Intention Log<span>by Vuja Tsoaele</span></div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="d0"></div>
+    <div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div>
+    <div class="pin-dot" id="d3"></div>
+  </div>
+  <div class="pin-pad">
+    <button class="pin-key" onclick="pinPress('1')">1</button>
+    <button class="pin-key" onclick="pinPress('2')">2</button>
+    <button class="pin-key" onclick="pinPress('3')">3</button>
+    <button class="pin-key" onclick="pinPress('4')">4</button>
+    <button class="pin-key" onclick="pinPress('5')">5</button>
+    <button class="pin-key" onclick="pinPress('6')">6</button>
+    <button class="pin-key" onclick="pinPress('7')">7</button>
+    <button class="pin-key" onclick="pinPress('8')">8</button>
+    <button class="pin-key" onclick="pinPress('9')">9</button>
+    <button class="pin-key" onclick="void(0)"></button>
+    <button class="pin-key" onclick="pinPress('0')">0</button>
+    <button class="pin-key del" onclick="pinDel()">⌫</button>
+  </div>
+  <div class="pin-error" id="pin-error"></div>
+  <div class="pin-hint" id="pin-hint"></div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="header">
+    <div class="logo-mark">TIL</div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="showView('add')" title="New intention">＋</button>
+      <button class="icon-btn" onclick="showView('settings')" title="Settings">⚙</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showView('dashboard')">Dashboard</button>
+    <button class="tab" onclick="showView('journal')">Journal</button>
+    <button class="tab" onclick="showView('add')">+ New</button>
+    <button class="tab" onclick="showView('about')">About</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="view active" id="view-dashboard">
+    <div class="dashboard-header fade-in">
+      <h2 class="serif" id="dash-greeting">Your Journey</h2>
+      <p id="dash-date"></p>
+    </div>
+    <div class="stats-grid fade-in">
+      <div class="stat-card"><div class="stat-val" id="stat-total">0</div><div class="stat-label">Set</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-arrived">0</div><div class="stat-label">Arrived</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-rate">0%</div><div class="stat-label">Rate</div></div>
+    </div>
+    <div class="section-title">Recent intentions</div>
+    <div class="recent-list" id="recent-list"></div>
+  </div>
+
+  <!-- JOURNAL -->
+  <div class="view" id="view-journal">
+    <div class="filter-row" id="filter-row">
+      <button class="filter-chip active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-chip" onclick="setFilter('set',this)">Set</button>
+      <button class="filter-chip" onclick="setFilter('arrived',this)">Arrived</button>
+      <button class="filter-chip" onclick="setFilter('partial',this)">Partial</button>
+      <button class="filter-chip" onclick="setFilter('released',this)">Released</button>
+    </div>
+    <div class="recent-list" id="journal-list"></div>
+  </div>
+
+  <!-- ADD -->
+  <div class="view" id="view-add">
+    <div class="section-title">Set a new intention</div>
+    <div class="form-group">
+      <label class="form-label">The intention</label>
+      <textarea id="f-intention" placeholder="State it clearly, as if it is already yours..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <select id="f-category">
+        <option value="abundance">Abundance</option>
+        <option value="health">Health</option>
+        <option value="love">Love</option>
+        <option value="career">Career</option>
+        <option value="clarity">Clarity</option>
+        <option value="growth">Growth</option>
+        <option value="peace">Peace</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">How it feels right now</label>
+      <div class="feeling-grid" id="feeling-grid">
+        <button class="feeling-btn" onclick="selectFeeling(this,'hopeful')">Hopeful</button>
+        <button class="feeling-btn" onclick="selectFeeling(this,'excited')">Excited</button>
+        <button class="feeling-btn" onclick="selectFeeling(this,'certain')">Certain</button>
+        <button class="feeling-btn" onclick="selectFeeling(this,'peaceful')">Peaceful</button>
+        <button class="feeling-btn" onclick="selectFeeling(this,'grateful')">Grateful</button>
+        <button class="feeling-btn" onclick="selectFeeling(this,'doubtful')">Doubtful</button>
+        <button class="feeling-btn" onclick="selectFeeling(this,'anxious')">Anxious</button>
+        <button class="feeling-btn" onclick="selectFeeling(this,'neutral')">Neutral</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <label class="form-label" style="margin:0">Faith level</label>
+        <div class="faith-val" id="faith-display">7</div>
+      </div>
+      <input type="range" class="faith-slider" id="f-faith" min="1" max="10" value="7" oninput="document.getElementById('faith-display').textContent=this.value">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes (optional)</label>
+      <textarea id="f-notes" placeholder="What does this mean to you? Why now?"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <select id="f-status">
+        <option value="set">Set — I am calling this in</option>
+        <option value="arrived">Arrived — It came through</option>
+        <option value="partial">Partial — Something shifted</option>
+        <option value="released">Released — I let this go</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn-primary" onclick="saveEntry()">Set the intention</button>
+      <button class="btn-ghost" onclick="showView('dashboard')">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <div class="view" id="view-about">
+    <div class="about-card fade-in">
+      <span class="serif">The Intention Log</span>
+      <div class="about-body">
+        <p>I built this because I needed somewhere to record what I was calling in — not a notes app, not a spreadsheet. Something that felt like it took the work seriously.</p>
+        <p>This is not a manifestation gimmick. It is a record of proof. A place to write down what you set your heart toward, track how it arrived, and reflect honestly on the journey between setting and receiving.</p>
+        <p>Every entry lives only on your device. No cloud. No account. No one can see what you write — not even me.</p>
+        <p>It closes, as I close every piece of work I do, with a prayer of forgiveness and gratitude. Because intention without integrity is just wishing.</p>
+      </div>
+      <div class="hooponopono">I'm sorry. Please forgive me.<br>Thank you. I love you.</div>
+      <div class="vuja-sig">— Vuja Tsoaele</div>
+    </div>
+
+    <div style="margin-top:24px">
+      <div class="section-title">Achievements</div>
+      <div class="achievements-grid" id="achievements-grid"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="view" id="view-settings">
+    <div class="settings-section">
+      <h3>Security</h3>
+      <div class="settings-row">
+        <div><div class="settings-label">Change PIN</div><div class="settings-sublabel">Update your 4-digit lock</div></div>
+        <button class="btn-ghost" onclick="changePin()">Change</button>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">Reset PIN to 0000</div><div class="settings-sublabel">Use if you forgot your PIN</div></div>
+        <button class="btn-ghost" onclick="resetPin()">Reset</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>Data</h3>
+      <div class="settings-row">
+        <div><div class="settings-label">Export journal</div><div class="settings-sublabel">Download as JSON backup</div></div>
+        <button class="btn-ghost" onclick="exportData()">Export</button>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">Import journal</div><div class="settings-sublabel">Restore from JSON backup</div></div>
+        <button class="btn-ghost" onclick="importData()">Import</button>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label" style="color:#c46a6a">Erase all data</div><div class="settings-sublabel">Cannot be undone</div></div>
+        <button class="btn-danger" onclick="eraseAll()">Erase</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>About</h3>
+      <div class="settings-row"><div class="settings-label">Version</div><span style="color:var(--text3);font-size:13px">1.0.0</span></div>
+      <div class="settings-row"><div class="settings-label">Made by</div><span style="color:var(--text3);font-size:13px">Vuja Tsoaele</span></div>
+      <div class="settings-row"><div class="settings-label">Data stored</div><span style="color:var(--text3);font-size:13px" id="data-size">0 entries</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-backdrop" id="modal" onclick="closeModal(event)">
+  <div class="modal" id="modal-content">
+    <div class="modal-handle"></div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<script>
+const STORAGE_KEY='til_entries';
+const PIN_KEY='til_pin';
+const DEFAULT_PIN='0000';
+
+let entries=[];
+let currentFilter='all';
+let editingId=null;
+let selectedFeeling='';
+let pinBuffer='';
+let settingNewPin=false;
+let newPinBuffer='';
+let newPinStep=0;
+
+const ACHIEVEMENTS=[
+  {id:'first',icon:'🌱',name:'First Word',desc:'Set your first intention',check:e=>e.length>=1},
+  {id:'five',icon:'✨',name:'Five Deep',desc:'5 intentions set',check:e=>e.length>=5},
+  {id:'ten',icon:'🌿',name:'Ten Seeds',desc:'10 intentions set',check:e=>e.length>=10},
+  {id:'arrived',icon:'🌟',name:'Proof',desc:'First arrived intention',check:e=>e.some(x=>x.status==='arrived')},
+  {id:'faith10',icon:'🔥',name:'Full Faith',desc:'Faith at 10',check:e=>e.some(x=>x.faith===10)},
+  {id:'consistent',icon:'🌊',name:'Consistent',desc:'20 intentions set',check:e=>e.length>=20},
+];
+
+function load(){entries=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(entries))}
+function getPin(){return localStorage.getItem(PIN_KEY)||DEFAULT_PIN}
+function savePin(p){localStorage.setItem(PIN_KEY,p)}
+
+function pinPress(d){
+  if(settingNewPin){handleNewPin(d);return}
+  pinBuffer+=d;
+  for(let i=0;i<4;i++)document.getElementById('d'+i).classList.toggle('filled',i<pinBuffer.length);
+  if(pinBuffer.length===4){
+    setTimeout(()=>{
+      if(pinBuffer===getPin()){
+        document.getElementById('pin-screen').style.display='none';
+        document.getElementById('app').classList.add('visible');
+        load();renderDashboard();
+      } else {
+        document.getElementById('pin-error').textContent='Incorrect PIN';
+        pinBuffer='';
+        for(let i=0;i<4;i++)document.getElementById('d'+i).classList.remove('filled');
+        setTimeout(()=>document.getElementById('pin-error').textContent='',1500);
+      }
+    },150);
+  }
+}
+function pinDel(){
+  if(settingNewPin){newPinBuffer=newPinBuffer.slice(0,-1);return}
+  pinBuffer=pinBuffer.slice(0,-1);
+  for(let i=0;i<4;i++)document.getElementById('d'+i).classList.toggle('filled',i<pinBuffer.length);
+}
+
+function changePin(){
+  settingNewPin=true;newPinStep=0;newPinBuffer='';
+  document.getElementById('pin-screen').style.display='flex';
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('pin-hint').textContent='Enter your new PIN';
+  pinBuffer='';
+  for(let i=0;i<4;i++)document.getElementById('d'+i).classList.remove('filled');
+}
+function handleNewPin(d){
+  newPinBuffer+=d;
+  for(let i=0;i<4;i++)document.getElementById('d'+i).classList.toggle('filled',i<newPinBuffer.length);
+  if(newPinBuffer.length===4){
+    if(newPinStep===0){newPinStep=1;document.getElementById('pin-hint').textContent='Confirm your new PIN';let tmp=newPinBuffer;newPinBuffer='';setTimeout(()=>{for(let i=0;i<4;i++)document.getElementById('d'+i).classList.remove('filled');},200);return;}
+    if(newPinStep===1){
+      let first=getPin();
+      if(newPinBuffer===tmp||true){
+        savePin(newPinBuffer);
+        settingNewPin=false;newPinBuffer='';
+        document.getElementById('pin-screen').style.display='none';
+        document.getElementById('app').classList.add('visible');
+        document.getElementById('pin-hint').textContent='';
+        alert('PIN updated.');
+      }
+    }
+  }
+}
+function resetPin(){if(confirm('Reset PIN to 0000?')){savePin('0000')}}
+
+function showView(v){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  const tabs={dashboard:0,journal:1,add:2,about:3};
+  if(tabs[v]!==undefined)document.querySelectorAll('.tab')[tabs[v]].classList.add('active');
+  if(v==='dashboard')renderDashboard();
+  if(v==='journal')renderJournal();
+  if(v==='add')resetForm();
+  if(v==='about')renderAchievements();
+  if(v==='settings')document.getElementById('data-size').textContent=entries.length+' entries';
+}
+
+function renderDashboard(){
+  const now=new Date();
+  const h=now.getHours();
+  const greet=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+  document.getElementById('dash-greeting').textContent=greet;
+  document.getElementById('dash-date').textContent=now.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('stat-total').textContent=entries.length;
+  const arrived=entries.filter(e=>e.status==='arrived').length;
+  document.getElementById('stat-arrived').textContent=arrived;
+  document.getElementById('stat-rate').textContent=entries.length?Math.round(arrived/entries.length*100)+'%':'0%';
+  const recent=entries.slice().reverse().slice(0,5);
+  const list=document.getElementById('recent-list');
+  list.innerHTML=recent.length?recent.map(e=>entryCardHTML(e)).join(''):`<div class="empty-state"><span class="serif">Begin here.</span><p>Your first intention is the most important one.<br>Set it now.</p></div>`;
+  list.querySelectorAll('.entry-card').forEach(c=>c.addEventListener('click',()=>openModal(c.dataset.id)));
+}
+
+function renderJournal(){
+  const filtered=currentFilter==='all'?entries:entries.filter(e=>e.status===currentFilter);
+  const list=document.getElementById('journal-list');
+  list.innerHTML=filtered.length?filtered.slice().reverse().map(e=>entryCardHTML(e)).join(''):`<div class="empty-state"><span class="serif">Nothing here yet.</span><p>Try a different filter or set a new intention.</p></div>`;
+  list.querySelectorAll('.entry-card').forEach(c=>c.addEventListener('click',()=>openModal(c.dataset.id)));
+}
+
+function entryCardHTML(e){
+  const statusMap={set:'badge-status-set',arrived:'badge-status-arrived',partial:'badge-status-partial',released:'badge-status-released'};
+  const statusLabel={set:'Set',arrived:'Arrived ✓',partial:'Partial',released:'Released'};
+  const d=new Date(e.date).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'});
+  return`<div class="entry-card fade-in" data-id="${e.id}">
+    <div class="entry-top"><div class="entry-intention">${e.intention}</div></div>
+    <div class="entry-meta">
+      <span class="badge ${statusMap[e.status]}">${statusLabel[e.status]}</span>
+      ${e.feeling?`<span class="badge badge-feeling">${e.feeling}</span>`:''}
+      <span class="badge badge-feeling">${e.category}</span>
+      <span class="entry-date">${d}</span>
+    </div>
+  </div>`;
+}
+
+function setFilter(f,el){
+  currentFilter=f;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderJournal();
+}
+
+function openModal(id){
+  const e=entries.find(x=>x.id==id);if(!e)return;
+  const statusLabel={set:'Set — calling it in',arrived:'Arrived ✓',partial:'Partial shift',released:'Released with love'};
+  const d=new Date(e.date).toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('modal-body').innerHTML=`
+    <div class="modal-intention">"${e.intention}"</div>
+    <div class="modal-grid">
+      <div class="modal-field"><div class="modal-field-label">Status</div><div class="modal-field-val">${statusLabel[e.status]}</div></div>
+      <div class="modal-field"><div class="modal-field-label">Faith level</div><div class="modal-field-val">${e.faith}/10</div></div>
+      <div class="modal-field"><div class="modal-field-label">Feeling</div><div class="modal-field-val">${e.feeling||'—'}</div></div>
+      <div class="modal-field"><div class="modal-field-label">Category</div><div class="modal-field-val">${e.category}</div></div>
+    </div>
+    ${e.notes?`<div class="modal-note">${e.notes}</div>`:''}
+    <div style="font-size:12px;color:var(--text3);margin-bottom:16px">${d}</div>
+    <div class="hooponopono">I'm sorry. Please forgive me.<br>Thank you. I love you.</div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="editEntry('${e.id}')">Update status</button>
+      <button class="btn-danger" onclick="deleteEntry('${e.id}')">Delete</button>
+    </div>`;
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(ev){
+  if(ev.target===document.getElementById('modal'))document.getElementById('modal').classList.remove('open');
+}
+
+function editEntry(id){
+  const e=entries.find(x=>x.id==id);if(!e)return;
+  document.getElementById('modal').classList.remove('open');
+  editingId=id;
+  document.getElementById('f-intention').value=e.intention;
+  document.getElementById('f-category').value=e.category;
+  document.getElementById('f-faith').value=e.faith;
+  document.getElementById('faith-display').textContent=e.faith;
+  document.getElementById('f-notes').value=e.notes||'';
+  document.getElementById('f-status').value=e.status;
+  selectedFeeling=e.feeling||'';
+  document.querySelectorAll('.feeling-btn').forEach(b=>b.classList.toggle('selected',b.textContent.toLowerCase()===selectedFeeling.toLowerCase()));
+  showView('add');
+}
+
+function deleteEntry(id){
+  if(!confirm('Delete this intention?'))return;
+  entries=entries.filter(e=>e.id!=id);
+  save();
+  document.getElementById('modal').classList.remove('open');
+  renderDashboard();
+}
+
+function selectFeeling(btn,f){
+  selectedFeeling=f;
+  document.querySelectorAll('.feeling-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function resetForm(){
+  editingId=null;selectedFeeling='';
+  document.getElementById('f-intention').value='';
+  document.getElementById('f-category').value='abundance';
+  document.getElementById('f-faith').value=7;
+  document.getElementById('faith-display').textContent=7;
+  document.getElementById('f-notes').value='';
+  document.getElementById('f-status').value='set';
+  document.querySelectorAll('.feeling-btn').forEach(b=>b.classList.remove('selected'));
+}
+
+function saveEntry(){
+  const intention=document.getElementById('f-intention').value.trim();
+  if(!intention){alert('Please write your intention.');return;}
+  const entry={
+    id:editingId||Date.now(),
+    intention,
+    category:document.getElementById('f-category').value,
+    feeling:selectedFeeling,
+    faith:parseInt(document.getElementById('f-faith').value),
+    notes:document.getElementById('f-notes').value.trim(),
+    status:document.getElementById('f-status').value,
+    date:editingId?entries.find(e=>e.id==editingId).date:new Date().toISOString(),
+    updated:new Date().toISOString()
+  };
+  if(editingId){entries=entries.map(e=>e.id==editingId?entry:e);}
+  else{entries.push(entry);}
+  save();editingId=null;
+  showView('dashboard');
+}
+
+function exportData(){
+  const blob=new Blob([JSON.stringify({version:'1.0',exported:new Date().toISOString(),entries},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='intention-log-backup.json';a.click();
+}
+function importData(){document.getElementById('import-file').click()}
+function handleImport(ev){
+  const f=ev.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.entries&&Array.isArray(d.entries)){entries=d.entries;save();renderDashboard();alert('Journal restored: '+entries.length+' entries.');}}catch{alert('Invalid backup file.');}};
+  r.readAsText(f);ev.target.value='';
+}
+function eraseAll(){if(confirm('Erase everything? This cannot be undone.')){entries=[];save();renderDashboard();}}
+
+function renderAchievements(){
+  const grid=document.getElementById('achievements-grid');
+  grid.innerHTML=ACHIEVEMENTS.map(a=>{
+    const unlocked=a.check(entries);
+    return`<div class="ach-card${unlocked?' unlocked':''}"><div class="ach-icon">${a.icon}</div><div class="ach-name">${a.name}</div></div>`;
+  }).join('');
+}
+
+// PWA manifest
+const manifest={name:'The Intention Log',short_name:'TIL',start_url:'.',display:'standalone',background_color:'#0d0d0d',theme_color:'#0d0d0d',description:'A private offline journal for your intentions.',icons:[{src:'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%230d0d0d%22/><text y=%22.9em%22 font-size=%2280%22>🌿</text></svg>',sizes:'any',type:'image/svg+xml'}]};
+const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+document.getElementById('manifest-link').href=URL.createObjectURL(blob);
+
+// init
+window.addEventListener('load',()=>{
+  document.getElementById('pin-hint').textContent=localStorage.getItem(PIN_KEY)?'':'Default PIN is 0000';
+});
+</script>
+</body>
+</html>
